@@ -13,12 +13,11 @@ let angle = 0;
 let count = 0;
 
 function setup() {
-    createCanvas(imgSize, imgSize);
+    createCanvas(2048, 2048);
     for (let i = 0; i < imgSize; i++) {
         n[i] = new NoiseLoop(20, -1, 1); //diameter, min, max
     }
     generateImage();
-
 }
 
 
@@ -29,14 +28,28 @@ function generateImage() {
         a[i] = n[i].value(angle);
     }
     //amt += 0.05; //unused?
-    let da = TWO_PI / (24*60); //MH - not sure why these values are used (1440 = 360*4)
+    let da = (2*Math.PI) / (24*60); //MH - not sure why these values are used (1440 = 360*4)
     angle += da;
 
     const data = {
         z: a, //generated latent space vector
-        truncation: 0.5, //variation in image generations - higher is more random, lower is more similar
+        truncation: 0.2, //variation in image generations - higher is more random, lower is more similar
     };
-    httpPost(path, 'json', data, gotImage, gotError);
+    httpPost(path, 'json', data, generateUpscaledImage, gotError); // change the gotImage callback to another Post request that gets the upscalled image
+}
+
+function generateUpscaledImage(results) {
+    /*const path = "http://localhost:8001/query"; //the default path used by Runway / StyleGAN for receiving post requests
+
+    const data = {
+        image: image.image
+    };
+
+    httpPost(path, 'json', data, gotImage, gotError); // change the gotImage callback to another Post request that gets the upscalled image*/
+
+    console.log(results);
+    const path = "http://localhost:8001/data";
+    httpGet(path, 'json', gotImage, gotError);
 }
 
 function gotError(error) { //if the generate image post request fails
@@ -54,7 +67,7 @@ function imageReady() { //saves the image
     image(outputImage, 0, 0);
     //save(`outputImage${nf(count, 4)}`); //nf formats numbers to strings //if you don't want to output to Runway, you can save the images straight from processing by uncommenting this line.
     count++;
-    if (angle <= TWO_PI) { //once we have traversed all pixels, generated a new image
+    if (angle <= Math.PI*2) { //once we have traversed all pixels, generated a new image
         setTimeout(generateImage, 100);
     }
 }
